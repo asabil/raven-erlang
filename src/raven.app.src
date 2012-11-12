@@ -1,0 +1,14 @@
+{application, raven, [
+	{description, ""},
+	{vsn, git},
+	{registered, []},
+	{applications, [
+		kernel,
+		stdlib,
+		crypto,
+		inets,
+		jiffy
+	]},
+	{mod, {raven_app, []}},
+	{env, []}
+]}.
