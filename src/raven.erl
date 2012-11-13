@@ -15,7 +15,7 @@ capture(Message, Params) ->
 	{ok, Vsn} = application:get_key(raven, vsn),
 	{ok, Uri} = application:get_env(raven, uri),
 	{ok, PublicKey} = application:get_env(raven, public_key),
-	{ok, _PrivateKey} = application:get_env(raven, private_key),
+	{ok, PrivateKey} = application:get_env(raven, private_key),
 	{ok, Project} = application:get_env(raven, project),
 	Document = {[
 		{event_id, event_id_i()},
@@ -42,12 +42,14 @@ capture(Message, Params) ->
 		end, Params)
 	]},
 	Timestamp = integer_to_list(unix_timestamp_i()),
+	Body = base64:encode(zlib:compress(jiffy:encode(Document))),
+	Signature = signature_i(Body, Timestamp, PrivateKey),
 	Headers = [
-		{"X-Sentry-Auth", ["Sentry sentry_version=2.0,sentry_client=raven-erlang/", Vsn, ",sentry_timestamp=", Timestamp, ",sentry_key=", PublicKey]},
+		{"X-Sentry-Auth", ["Sentry sentry_version=2.0,sentry_client=raven-erlang/", Vsn, ",sentry_timestamp=", Timestamp, ",sentry_signature=", Signature, ",sentry_key=", PublicKey]},
 		{"User-Agent", ["raven-erlang/", Vsn]}
 	],
 	httpc:request(post,
-		{Uri ++ "/api/store/", Headers, "application/octet-stream", jiffy:encode(Document)},
+		{Uri ++ "/api/store/", Headers, "application/octet-stream", Body},
 		[],
 		[{body_format, binary}]
 	),
@@ -71,6 +73,11 @@ timestamp_i() ->
 unix_timestamp_i() ->
 	{Mega, Sec, Micro} = os:timestamp(),
 	Mega * 1000000 * 1000000 + Sec * 1000000 + Micro.
+
+signature_i(Message, Timestamp, Key) ->
+	io:format("~s ~s ~s~n", [Message, Timestamp, Key]),
+	<<Hash:160/integer>> = crypto:sha_mac(Key, [Timestamp, " ", Message]),
+	iolist_to_binary(io_lib:format("~40.16.0b", [Hash])).
 
 frame_to_json_i({Module, Function, Arguments}) ->
 	frame_to_json_i({Module, Function, Arguments, []});
