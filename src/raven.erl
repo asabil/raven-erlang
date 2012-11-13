@@ -19,7 +19,7 @@ capture(Message, Params) ->
 	{ok, Project} = application:get_env(raven, project),
 	Document = {[
 		{event_id, event_id_i()},
-		{project, Project},
+		{project, unicode:characters_to_binary(Project)},
 		{platform, erlang},
 		{server_name, node()},
 		{timestamp, timestamp_i()},
@@ -34,11 +34,13 @@ capture(Message, Params) ->
 					{value, Value}
 				]}};
 			({tags, Tags}) ->
-				{tags, {[{Key, iolist_to_binary(io_lib:format("~120p", Value))} || {Key, Value} <- Tags]}};
+				{tags, {[{Key, iolist_to_binary(io_lib:format("~120p", [Value]))} || {Key, Value} <- Tags]}};
+			({extra, Tags}) ->
+				{extra, {[{Key, iolist_to_binary(io_lib:format("~120p", [Value]))} || {Key, Value} <- Tags]}};
 			({Key, Value}) when is_atom(Value); is_binary(Value) ->
 				{Key, Value};
 			({Key, Value}) ->
-				{Key, iolist_to_binary(io_lib:format("~120p", Value))}
+				{Key, iolist_to_binary(io_lib:format("~120p", [Value]))}
 		end, Params)
 	]},
 	Timestamp = integer_to_list(unix_timestamp_i()),
