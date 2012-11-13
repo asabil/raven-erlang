@@ -21,21 +21,21 @@ handle_event({error, _, {Pid, Format, Data}}, State) ->
 	capture_message(error, Pid, Format, Data),
 	{ok, State};
 handle_event({error_report, _, {Pid, Type, Report}}, State) ->
-	capture_report(error, Pid, Type, Report),
+	capture_report(error, Pid, Type, lists:sort(Report)),
 	{ok, State};
 
 handle_event({warning_msg, _, {Pid, Format, Data}}, State) ->
 	capture_message(warning, Pid, Format, Data),
 	{ok, State};
 handle_event({warning_report, _, {Pid, Type, Report}}, State) ->
-	capture_report(warning, Pid, Type, Report),
+	capture_report(warning, Pid, Type, lists:sort(Report)),
 	{ok, State};
 
 handle_event({info_msg, _, {Pid, Format, Data}}, State) ->
 	capture_message(info, Pid, Format, Data),
 	{ok, State};
 handle_event({info_report, _, {Pid, Type, Report}}, State) ->
-	capture_report(info, Pid, Type, Report),
+	capture_report(info, Pid, Type, lists:sort(Report)),
 	{ok, State};
 
 handle_event(_, State) ->
@@ -133,10 +133,37 @@ capture_report(Level, Pid, crash_report, [Report, Neighbors]) ->
 	{Type, Reason, Trace} = proplists:get_value(error_info, Report),
 	raven:capture(format("Process ~w with ~w neighbors crashed with reason: ~s", [Name, length(Neighbors), format_reason(Reason)]), [
 		{level, Level},
+		{logger, supervisors},
 		{exception, {Type, Reason}},
 		{stacktrace, Trace},
 		{extra, [
 			{pid, Pid}
+		]}
+	]);
+capture_report(info, Pid, progress, [{application, App}, {started_at, Node} | _]) ->
+	raven:capture(format("Application ~w started on node ~w", [App, Node]), [
+		{level, info},
+		{logger, supervisors},
+		{extra, [
+			{pid, Pid}
+		]}
+	]);
+capture_report(info, Pid, progress, [{started, Started}, {supervisor, Supervisor} | _]) ->
+	Message = case proplists:get_value(name, Started, []) of
+		[] -> format("Supervisor ~w started child", [Supervisor]);
+		Name -> format("Supervisor ~w started ~w", [Supervisor, Name])
+	end,
+	raven:capture(Message, [
+		{level, info},
+		{logger, supervisors},
+		{extra, [
+			{supervisor, Supervisor},
+			{pid, Pid},
+			{child_pid, proplists:get_value(pid, Started)},
+			{mfa, format_mfa(proplists:get_value(mfargs, Started))},
+			{restart_type, proplists:get_value(restart_type, Started)},
+			{child_type, proplists:get_value(child_type, Started)},
+			{shutdown, proplists:get_value(shutdown, Started)}
 		]}
 	]);
 capture_report(Level, Pid, Type, Report) ->
