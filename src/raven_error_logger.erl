@@ -56,13 +56,13 @@ capture_message(error = Level, Pid, "** Generic server " ++ _, [Name, LastMessag
 	{Error, Trace} = parse_reason(Reason),
 	raven:capture(format("gen_server ~w terminated with reason: ~s", [Name, format_reason(Reason)]), [
 		{level, Level},
-		{last_message, LastMessage},
-		{state, State},
 		{exception, {error, Error}},
 		{stacktrace, Trace},
-		{tags, [
+		{extra, [
 			{name, Name},
-			{pid, Pid}
+			{pid, Pid},
+			{last_message, LastMessage},
+			{state, State}
 		]}
 	]);
 capture_message(error = Level, Pid, "** State machine " ++ _, [Name, LastMessage, StateName, State, Reason]) ->
@@ -70,13 +70,13 @@ capture_message(error = Level, Pid, "** State machine " ++ _, [Name, LastMessage
 	{Error, Trace} = parse_reason(Reason),
 	raven:capture(format("gen_fsm ~w in state ~w terminated with reason: ~s", [Name, StateName, format_reason(Reason)]), [
 		{level, Level},
-		{last_message, LastMessage},
-		{state, State},
 		{exception, {error, Error}},
 		{stacktrace, Trace},
-		{tags, [
+		{extra, [
 			{name, Name},
-			{pid, Pid}
+			{pid, Pid},
+			{last_message, LastMessage},
+			{state, State}
 		]}
 	]);
 capture_message(error = Level, Pid, "** gen_event handler " ++ _, [ID, Name, LastMessage, State, Reason]) ->
@@ -84,23 +84,23 @@ capture_message(error = Level, Pid, "** gen_event handler " ++ _, [ID, Name, Las
 	{Error, Trace} = parse_reason(Reason),
 	raven:capture(format("gen_event ~w installed in ~w terminated with reason: ~s", [ID, Name, format_reason(Reason)]), [
 		{level, Level},
-		{last_message, LastMessage},
-		{state, State},
 		{exception, {error, Error}},
 		{stacktrace, Trace},
-		{tags, [
+		{extra, [
 			{name, Name},
-			{pid, Pid}
+			{pid, Pid},
+			{last_message, LastMessage},
+			{state, State}
 		]}
 	]);
 capture_message(error = Level, Pid, "Error in process " ++ _, [Name, Node, Reason]) ->
 	%% process terminate
 	raven:capture(format("Process ~w on node ~w terminated with reason: ~s", [Name, Node, format_reason(Reason)]), [
 		{level, Level},
-		{reason, Reason},
-		{tags, [
+		{extra, [
 			{name, Name},
-			{pid, Pid}
+			{pid, Pid},
+			{reason, Reason}
 		]}
 	]);
 capture_message(error = Level, Pid, "** Generic process " ++ _, [Name, LastMessage, State, Reason]) ->
@@ -108,19 +108,19 @@ capture_message(error = Level, Pid, "** Generic process " ++ _, [Name, LastMessa
 	{Error, Trace} = parse_reason(Reason),
 	raven:capture(format("gen_process ~w terminated with reason: ~s", [Name, format_reason(Reason)]), [
 		{level, Level},
-		{last_message, LastMessage},
-		{state, State},
 		{exception, {error, Error}},
 		{stacktrace, Trace},
-		{tags, [
+		{extra, [
 			{name, Name},
-			{pid, Pid}
+			{pid, Pid},
+			{last_message, LastMessage},
+			{state, State}
 		]}
 	]);
 capture_message(Level, Pid, Format, Data) ->
 	raven:capture(format(Format, Data), [
 		{level, Level},
-		{tags, [
+		{extra, [
 			{pid, Pid}
 		]}
 	]).
@@ -135,7 +135,7 @@ capture_report(Level, Pid, crash_report, [Report, Neighbors]) ->
 		{level, Level},
 		{exception, {Type, Reason}},
 		{stacktrace, Trace},
-		{tags, [
+		{extra, [
 			{pid, Pid}
 		]}
 	]);
@@ -143,11 +143,11 @@ capture_report(Level, Pid, Type, Report) ->
 	Message = unicode:characters_to_binary(proplists:get_value(message, Report, "Report from process")),
 	raven:capture(Message, [
 		{level, Level},
-		{type, Type},
-		{tags, [
-			{pid, Pid}
-		]} |
-		Report
+		{extra, [
+			{type, Type},
+			{pid, Pid} |
+			Report
+		]}
 	]).
 
 
