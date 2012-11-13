@@ -36,13 +36,11 @@ capture(Message, Params) ->
 					{value, Value}
 				]}};
 			({tags, Tags}) ->
-				{tags, {[{Key, iolist_to_binary(io_lib:format("~120p", [Value]))} || {Key, Value} <- Tags]}};
+				{tags, {[{Key, term_to_json_i(Value)} || {Key, Value} <- Tags]}};
 			({extra, Tags}) ->
-				{extra, {[{Key, iolist_to_binary(io_lib:format("~120p", [Value]))} || {Key, Value} <- Tags]}};
-			({Key, Value}) when is_atom(Value); is_binary(Value) ->
-				{Key, Value};
+				{extra, {[{Key, term_to_json_i(Value)} || {Key, Value} <- Tags]}};
 			({Key, Value}) ->
-				{Key, iolist_to_binary(io_lib:format("~120p", [Value]))}
+				{Key, term_to_json_i(Value)}
 		end, Params)
 	]},
 	Timestamp = integer_to_list(unix_timestamp_i()),
@@ -101,3 +99,8 @@ frame_to_json_i({Module, Function, Arguments, Location}) ->
 			end}
 		]
 	}.
+
+term_to_json_i(Term) when is_binary(Term); is_atom(Term) ->
+	Term;
+term_to_json_i(Term) ->
+	iolist_to_binary(io_lib:format("~120p", [Term])).
