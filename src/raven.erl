@@ -60,8 +60,8 @@ event_id_i() ->
 	U2 = crypto:rand_uniform(0, (2 bsl 12) - 1),
 	U3 = crypto:rand_uniform(0, (2 bsl 32) - 1),
 	U4 = crypto:rand_uniform(0, (2 bsl 30) - 1),
-	UUID = <<U0:32, U1:16, 4:4, U2:12, 2#10:2, U3:32, U4:30>>,
-	list_to_binary(lists:flatten(io_lib:format("~32.16.0b", [UUID]))).
+	<<UUID:128>> = <<U0:32, U1:16, 4:4, U2:12, 2#10:2, U3:32, U4:30>>,
+	iolist_to_binary(io_lib:format("~32.16.0b", [UUID])).
 
 timestamp_i() ->
 	{{Y,Mo,D}, {H,Mn,S}} = calendar:now_to_datetime(os:timestamp()),
