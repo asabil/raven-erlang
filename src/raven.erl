@@ -11,8 +11,6 @@
 -type stackframe() ::
 	{module(), atom(), non_neg_integer() | [term()]} |
 	{module(), atom(), non_neg_integer() | [term()], [{atom(), term()}]}.
-capture(Message, Params) when is_list(Message) ->
-	capture(unicode:characters_to_binary(Message), Params);
 capture(Message, Params) ->
 	{ok, Vsn} = application:get_key(raven, vsn),
 	{ok, Uri} = application:get_env(raven, uri),
@@ -25,10 +23,11 @@ capture(Message, Params) ->
 		{platform, erlang},
 		{server_name, node()},
 		{timestamp, timestamp_i()},
-		{message, Message} | lists:map(fun
+		{message, term_to_json_i(Message)} |
+		lists:map(fun
 			({stacktrace, Value}) ->
 				{'sentry.interfaces.Stacktrace', {[
-					{frames, [frame_to_json_i(Frame) || Frame <- Value]}
+					{frames, lists:reverse([frame_to_json_i(Frame) || Frame <- Value])}
 				]}};
 			({exception, {Type, Value}}) ->
 				{'sentry.interfaces.Exception', {[
@@ -82,17 +81,18 @@ frame_to_json_i({Module, Function, Arguments, Location}) ->
 		true -> length(Arguments);
 		false -> Arguments
 	end,
+	Line = case lists:keyfind(line, 1, Location) of
+		false -> -1;
+		{line, L} -> L
+	end,
 	{
 		case is_list(Arguments) of
-			true -> [{vars, [iolist_to_binary(io_lib:format("~p", Argument)) || Argument <- Arguments]}];
+			true -> [{vars, [term_to_json_i(Argument) || Argument <- Arguments]}];
 			false -> []
-		end ++
-		case lists:keyfind(line, 1, Location) of
-			false -> [];
-			{line, Line} -> [{lineno, Line}]
 		end ++ [
 			{module, Module},
 			{function, <<(atom_to_binary(Function, utf8))/binary, "/", (list_to_binary(integer_to_list(Arity)))/binary>>},
+			{lineno, Line},
 			{filename, case lists:keyfind(file, 1, Location) of
 				false -> <<(atom_to_binary(Module, utf8))/binary, ".erl">>;
 				{file, File} -> list_to_binary(File)
