@@ -31,13 +31,6 @@ handle_event({warning_report, _, {Pid, Type, Report}}, State) ->
 	capture_report(warning, Pid, Type, lists:sort(Report)),
 	{ok, State};
 
-handle_event({info_msg, _, {Pid, Format, Data}}, State) ->
-	capture_message(info, Pid, Format, Data),
-	{ok, State};
-handle_event({info_report, _, {Pid, Type, Report}}, State) ->
-	capture_report(info, Pid, Type, lists:sort(Report)),
-	{ok, State};
-
 handle_event(_, State) ->
 	{ok, State}.
 
@@ -54,7 +47,7 @@ terminate(_, _) ->
 capture_message(error = Level, Pid, "** Generic server " ++ _, [Name, LastMessage, State, Reason]) ->
 	%% gen_server terminate
 	{Error, Trace} = parse_reason(Reason),
-	raven:capture(format("gen_server ~w terminated with reason: ~s", [Name, format_reason(Reason)]), [
+	raven:capture(format("gen_server ~w terminated with reason: ~s", [format_name(Name), format_reason(Reason)]), [
 		{level, Level},
 		{exception, {error, Error}},
 		{stacktrace, Trace},
@@ -68,7 +61,7 @@ capture_message(error = Level, Pid, "** Generic server " ++ _, [Name, LastMessag
 capture_message(error = Level, Pid, "** State machine " ++ _, [Name, LastMessage, StateName, State, Reason]) ->
 	%% gen_fsm terminate
 	{Error, Trace} = parse_reason(Reason),
-	raven:capture(format("gen_fsm ~w in state ~w terminated with reason: ~s", [Name, StateName, format_reason(Reason)]), [
+	raven:capture(format("gen_fsm ~w in state ~w terminated with reason: ~s", [format_name(Name), StateName, format_reason(Reason)]), [
 		{level, Level},
 		{exception, {error, Error}},
 		{stacktrace, Trace},
@@ -82,7 +75,7 @@ capture_message(error = Level, Pid, "** State machine " ++ _, [Name, LastMessage
 capture_message(error = Level, Pid, "** gen_event handler " ++ _, [ID, Name, LastMessage, State, Reason]) ->
 	%% gen_event handler terminate
 	{Error, Trace} = parse_reason(Reason),
-	raven:capture(format("gen_event ~w installed in ~w terminated with reason: ~s", [ID, Name, format_reason(Reason)]), [
+	raven:capture(format("gen_event ~w installed in ~w terminated with reason: ~s", [ID, format_name(Name), format_reason(Reason)]), [
 		{level, Level},
 		{exception, {error, Error}},
 		{stacktrace, Trace},
@@ -95,7 +88,7 @@ capture_message(error = Level, Pid, "** gen_event handler " ++ _, [ID, Name, Las
 	]);
 capture_message(error = Level, Pid, "Error in process " ++ _, [Name, Node, Reason]) ->
 	%% process terminate
-	raven:capture(format("Process ~w on node ~w terminated with reason: ~s", [Name, Node, format_reason(Reason)]), [
+	raven:capture(format("Process ~w on node ~w terminated with reason: ~s", [format_name(Name), Node, format_reason(Reason)]), [
 		{level, Level},
 		{extra, [
 			{name, Name},
@@ -106,7 +99,7 @@ capture_message(error = Level, Pid, "Error in process " ++ _, [Name, Node, Reaso
 capture_message(error = Level, Pid, "** Generic process " ++ _, [Name, LastMessage, State, Reason]) ->
 	%% gen_process terminate
 	{Error, Trace} = parse_reason(Reason),
-	raven:capture(format("gen_process ~w terminated with reason: ~s", [Name, format_reason(Reason)]), [
+	raven:capture(format("gen_process ~w terminated with reason: ~s", [format_name(Name), format_reason(Reason)]), [
 		{level, Level},
 		{exception, {error, Error}},
 		{stacktrace, Trace},
@@ -131,7 +124,7 @@ capture_report(Level, Pid, crash_report, [Report, Neighbors]) ->
 		Atom -> Atom
 	end,
 	{Type, Reason, Trace} = proplists:get_value(error_info, Report),
-	raven:capture(format("Process ~w with ~w neighbors crashed with reason: ~s", [Name, length(Neighbors), format_reason(Reason)]), [
+	raven:capture(format("Process ~w with ~w neighbors crashed with reason: ~s", [format_name(Name), length(Neighbors), format_reason(Reason)]), [
 		{level, Level},
 		{logger, supervisors},
 		{exception, {Type, Reason}},
@@ -140,18 +133,28 @@ capture_report(Level, Pid, crash_report, [Report, Neighbors]) ->
 			{pid, Pid}
 		]}
 	]);
-capture_report(info, Pid, progress, [{application, App}, {started_at, Node} | _]) ->
-	raven:capture(format("Application ~w started on node ~w", [App, Node]), [
-		{level, info},
+capture_report(Level, Pid, supervisor_report, [{errorContext, Context}, {offender, Offender}, {reason, Reason}, {supervisor, Supervisor}]) ->
+	{Error, Trace} = parse_reason(Reason),
+	raven:capture(format("Supervisor ~w had child exit with reason ~s", [format_name(Supervisor), format_reason(Reason)]), [
+		{level, Level},
 		{logger, supervisors},
+		{exception, {error, Error}},
+		{stacktrace, Trace},
 		{extra, [
-			{pid, Pid}
+			{supervisor, Supervisor},
+			{context, Context},
+			{pid, Pid},
+			{child_pid, proplists:get_value(pid, Offender)},
+			{mfa, format_mfa(proplists:get_value(mfargs, Offender))},
+			{restart_type, proplists:get_value(restart_type, Offender)},
+			{child_type, proplists:get_value(child_type, Offender)},
+			{shutdown, proplists:get_value(shutdown, Offender)}
 		]}
 	]);
-capture_report(info, Pid, progress, [{started, Started}, {supervisor, Supervisor} | _]) ->
+capture_report(info, Pid, progress, [{started, Started}, {supervisor, Supervisor}]) ->
 	Message = case proplists:get_value(name, Started, []) of
-		[] -> format("Supervisor ~w started child", [Supervisor]);
-		Name -> format("Supervisor ~w started ~w", [Supervisor, Name])
+		[] -> format("Supervisor ~w started child", [format_name(Supervisor)]);
+		Name -> format("Supervisor ~w started ~w", [format_name(Supervisor), Name])
 	end,
 	raven:capture(Message, [
 		{level, info},
@@ -168,15 +171,26 @@ capture_report(info, Pid, progress, [{started, Started}, {supervisor, Supervisor
 	]);
 capture_report(Level, Pid, Type, Report) ->
 	Message = unicode:characters_to_binary(proplists:get_value(message, Report, "Report from process")),
+	{Toplevel, Extra} = lists:partition(fun
+		({exception, _}) -> true;
+		({stacktrace, _}) -> true;
+		(_) -> false
+	end, Report),
 	raven:capture(Message, [
 		{level, Level},
 		{extra, [
 			{type, Type},
 			{pid, Pid} |
-			Report
-		]}
+			lists:keydelete(message, 1, Extra)
+		]} |
+		Toplevel
 	]).
 
+
+%% @private
+format_name({local, Name}) -> Name;
+format_name({global, Name}) -> Name;
+format_name(Name) -> Name.
 
 %% @private
 parse_reason({Reason, [MFA|_] = Trace}) when is_tuple(MFA) ->
@@ -270,22 +284,22 @@ format_mfa({M, F, A} = MFA) ->
 	if
 		is_list(A) ->
 			{FmtStr, Args} = format_args(A, [], []),
-			io_lib:format("~w:~w(" ++ FmtStr ++ ")", [M, F | Args]);
+			format("~w:~w(" ++ FmtStr ++ ")", [M, F | Args]);
 		is_integer(A) ->
-			io_lib:format("~w:~w/~w", [M, F, A]);
+			format("~w:~w/~w", [M, F, A]);
 		true ->
-			io_lib:format("~w", [MFA])
+			format("~w", [MFA])
 	end;
 format_mfa({M, F, A, _}) ->
 	format_mfa({M, F, A});
 format_mfa(Other) ->
-	io_lib:format("~w", [Other]).
+	format("~w", [Other]).
 
 %% @private
 format_args([], FmtAcc, ArgsAcc) ->
 	{string:join(lists:reverse(FmtAcc), ", "), lists:reverse(ArgsAcc)};
 format_args([H|T], FmtAcc, ArgsAcc) ->
-	format_args(T, ["~s" | FmtAcc], [format("~w", H) | ArgsAcc]).
+	format_args(T, ["~s" | FmtAcc], [format("~w", [H]) | ArgsAcc]).
 
 %% @private
 format(Format, Data) ->
