@@ -336,7 +336,7 @@ format_mfa(Term) ->
 format_args([], FormatAcc, ArgsAcc) ->
 	{string:join(lists:reverse(FormatAcc), ", "), lists:reverse(ArgsAcc)};
 format_args([Arg | Rest], FormatAcc, ArgsAcc) ->
-	format_args(Rest, ["~s" | FormatAcc], [format("~p", [Arg]) | ArgsAcc]).
+	format_args(Rest, ["~s" | FormatAcc], [format("~w", [Arg]) | ArgsAcc]).
 
 %% @private
 format_string(Term) when is_atom(Term); is_binary(Term) ->
