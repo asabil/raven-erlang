@@ -87,7 +87,7 @@ frame_to_json_i({Module, Function, Arguments, Location}) ->
 	end,
 	{
 		case is_list(Arguments) of
-			true -> [{vars, [term_to_json_i(Argument) || Argument <- Arguments]}];
+			true -> [{vars, [iolist_to_binary(io_lib:format("~w", [Argument])) || Argument <- Arguments]}];
 			false -> []
 		end ++ [
 			{module, Module},
