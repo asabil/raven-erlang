@@ -136,25 +136,37 @@ parse_message(Level, Pid, Format, Data) ->
 
 
 %% @private
-parse_report(Level, Pid, crash_report, [Report, _Neighbors]) ->
+parse_report(Level, Pid, crash_report, [Report, Neighbors]) ->
 	Name = case proplists:get_value(registered_name, Report, []) of
 		[] -> proplists:get_value(pid, Report);
 		N -> N
 	end,
-	{Class, R, Trace} = proplists:get_value(error_info, Report, {error, unknown, []}),
-	Reason = {{Class, R}, Trace},
-	{Exception, Stacktrace} = parse_reason(Reason),
-	{format_exit(process, Name, Reason), [
-		{level, Level},
-		{exception, Exception},
-		{stacktrace, Stacktrace},
-		{extra, [
-			{name, Name},
-			{pid, Pid},
-			{reason, Reason} |
-			Report
-		]}
-	]};
+	case Name of
+		undefined ->
+			{<<"Process crashed">>, [
+				{level, Level},
+				{extra, [
+					{pid, Pid},
+					{neighbors, Neighbors},
+					Report
+				]}
+			]};
+		_ ->
+			{Class, R, Trace} = proplists:get_value(error_info, Report, {error, unknown, []}),
+			Reason = {{Class, R}, Trace},
+			{Exception, Stacktrace} = parse_reason(Reason),
+			{format_exit("Process", Name, Reason), [
+				{level, Level},
+				{exception, Exception},
+				{stacktrace, Stacktrace},
+				{extra, [
+					{name, Name},
+					{pid, Pid},
+					{reason, Reason} |
+					Report
+				]}
+			]}
+	end;
 parse_report(Level, Pid, supervisor_report, [{errorContext, Context}, {offender, Offender}, {reason, Reason}, {supervisor, Supervisor}]) ->
 	{Exception, Stacktrace} = parse_reason(Reason),
 	{format("Supervisor ~s had child exit with reason ~s", [format_name(Supervisor), format_reason(Reason)]), [
