@@ -147,7 +147,7 @@ parse_report(Level, Pid, crash_report, [Report, Neighbors]) ->
 				{level, Level},
 				{extra, [
 					{pid, Pid},
-					{neighbors, Neighbors},
+					{neighbors, Neighbors} |
 					Report
 				]}
 			]};
