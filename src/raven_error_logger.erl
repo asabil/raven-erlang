@@ -136,12 +136,12 @@ parse_message(Level, Pid, Format, Data) ->
 
 
 %% @private
-parse_report(Level, Pid, crash_report, [Report, Neighbors]) ->
+parse_report(Level, Pid, crash_report, [Report, _Neighbors]) ->
 	Name = case proplists:get_value(registered_name, Report, []) of
 		[] -> proplists:get_value(pid, Report);
 		N -> N
 	end,
-	{Class, R, Trace} = proplists:get_value(error_info, Report),
+	{Class, R, Trace} = proplists:get_value(error_info, Report, {error, unknown, []}),
 	Reason = {{Class, R}, Trace},
 	{Exception, Stacktrace} = parse_reason(Reason),
 	{format_exit(process, Name, Reason), [
@@ -151,8 +151,8 @@ parse_report(Level, Pid, crash_report, [Report, Neighbors]) ->
 		{extra, [
 			{name, Name},
 			{pid, Pid},
-			{reason, Reason},
-			{neighbors, Neighbors}
+			{reason, Reason} |
+			Report
 		]}
 	]};
 parse_report(Level, Pid, supervisor_report, [{errorContext, Context}, {offender, Offender}, {reason, Reason}, {supervisor, Supervisor}]) ->
