@@ -32,7 +32,7 @@ capture(Message, Params) ->
 			({exception, {Type, Value}}) ->
 				{'sentry.interfaces.Exception', {[
 					{type, Type},
-					{value, Value}
+					{value, term_to_json_i(Value)}
 				]}};
 			({tags, Tags}) ->
 				{tags, {[{Key, term_to_json_i(Value)} || {Key, Value} <- Tags]}};
