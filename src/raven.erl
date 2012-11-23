@@ -43,7 +43,7 @@ capture(Message, Params) ->
 		end, Params)
 	]},
 	Timestamp = integer_to_list(unix_timestamp_i()),
-	Body = base64:encode(zlib:compress(jiffy:encode(Document))),
+	Body = base64:encode(zlib:compress(jiffy:encode(Document, [force_utf8]))),
 	Headers = [
 		{"X-Sentry-Auth", ["Sentry sentry_version=2.0,sentry_client=raven-erlang/", Vsn, ",sentry_timestamp=", Timestamp, ",sentry_key=", PublicKey]},
 		{"User-Agent", ["raven-erlang/", Vsn]}
