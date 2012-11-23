@@ -276,25 +276,25 @@ format_reason({undef, Trace}) ->
 format_reason({bad_return, {_MFA, {'EXIT', Reason}}}) ->
 	format_reason(Reason);
 format_reason({bad_return, {Trace, Val}}) ->
-	["bad return value ", format("~w", Val), " from ", format_mfa(Trace)];
+	["bad return value ", format_term(Val), " from ", format_mfa(Trace)];
 format_reason({bad_return_value, Val}) ->
-	["bad return value ", format("~w", Val)];
+	["bad return value ", format_term(Val)];
 format_reason({{bad_return_value, Val}, Trace}) ->
-	["bad return value ", format("~w", Val), " in ", format_mfa(Trace)];
+	["bad return value ", format_term(Val), " in ", format_mfa(Trace)];
 format_reason({{badrecord, Record}, Trace}) ->
-	["bad record ", format("~w", Record), " in ", format_mfa(Trace)];
+	["bad record ", format_term(Record), " in ", format_mfa(Trace)];
 format_reason({{case_clause, Value}, Trace}) ->
-	["no case clause matching ", format("~w", Value), " in ", format_mfa(Trace)];
+	["no case clause matching ", format_term(Value), " in ", format_mfa(Trace)];
 format_reason({function_clause, Trace}) ->
 	["no function clause matching ", format_mfa(Trace)];
 format_reason({if_clause, Trace}) ->
 	["no true branch found while evaluating if expression in ", format_mfa(Trace)];
 format_reason({{try_clause, Value}, Trace}) ->
-	["no try clause matching ", format("~w", Value), " in ", format_mfa(Trace)];
+	["no try clause matching ", format_term(Value), " in ", format_mfa(Trace)];
 format_reason({badarith, Trace}) ->
 	["bad arithmetic expression in ", format_mfa(Trace)];
 format_reason({{badmatch, Value}, Trace}) ->
-	["no match of right hand value ", format("~w", Value), " in ", format_mfa(Trace)];
+	["no match of right hand value ", format_term(Value), " in ", format_mfa(Trace)];
 format_reason({emfile, _Trace}) ->
 	"maximum number of file descriptors exhausted, check ulimit -n";
 format_reason({system_limit, [{M, F, _}|_] = Trace}) ->
@@ -321,7 +321,7 @@ format_reason({{badarity, {Fun, Args}}, Trace}) ->
 format_reason({noproc, Trace}) ->
 	["no such process or port in call to ", format_mfa(Trace)];
 format_reason({{badfun, Term}, Trace}) ->
-	["bad function ", format("~w", Term), " in ", format_mfa(Trace)];
+	["bad function ", format_term(Term), " in ", format_mfa(Trace)];
 format_reason({Reason, [{M, F, A}|_] = Trace}) when is_atom(M), is_atom(F), is_integer(A) ->
 	[format_reason(Reason), " in ", format_mfa(Trace)];
 format_reason({Reason, [{M, F, A, Props}|_] = Trace}) when is_atom(M), is_atom(F), is_integer(A), is_list(Props) ->
@@ -348,7 +348,7 @@ format_mfa(Term) ->
 format_args([], FormatAcc, ArgsAcc) ->
 	{string:join(lists:reverse(FormatAcc), ", "), lists:reverse(ArgsAcc)};
 format_args([Arg | Rest], FormatAcc, ArgsAcc) ->
-	format_args(Rest, ["~s" | FormatAcc], [format("~w", [Arg]) | ArgsAcc]).
+	format_args(Rest, ["~s" | FormatAcc], [format_term(Arg) | ArgsAcc]).
 
 %% @private
 format_string(Term) when is_atom(Term); is_binary(Term) ->
