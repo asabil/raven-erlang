@@ -12,8 +12,8 @@
 	{module(), atom(), non_neg_integer() | [term()]} |
 	{module(), atom(), non_neg_integer() | [term()], [{atom(), term()}]}.
 capture(Message, Params) ->
+	{ok, Transport} = application:get_env(raven, transport),
 	{ok, Vsn} = application:get_key(raven, vsn),
-	{ok, Uri} = application:get_env(raven, uri),
 	{ok, PublicKey} = application:get_env(raven, public_key),
 	{ok, _PrivateKey} = application:get_env(raven, private_key),
 	{ok, Project} = application:get_env(raven, project),
@@ -44,17 +44,24 @@ capture(Message, Params) ->
 	]},
 	Timestamp = integer_to_list(unix_timestamp_i()),
 	Body = base64:encode(zlib:compress(jiffy:encode(Document, [force_utf8]))),
-	Headers = [
-		{"X-Sentry-Auth", ["Sentry sentry_version=2.0,sentry_client=raven-erlang/", Vsn, ",sentry_timestamp=", Timestamp, ",sentry_key=", PublicKey]},
-		{"User-Agent", ["raven-erlang/", Vsn]}
-	],
-	httpc:request(post,
-		{Uri ++ "/api/store/", Headers, "application/octet-stream", Body},
-		[],
-		[{body_format, binary}]
-	),
+	AuthHeader = ["Sentry sentry_version=2.0,sentry_client=raven-erlang/", Vsn, ",sentry_timestamp=", Timestamp, ",sentry_key=", PublicKey],
+	case Transport of
+		{udp, Host, Port} ->
+			{ok, Socket} = gen_udp:open(0, [list]),
+			gen_udp:send(Socket, Host, Port, [AuthHeader, "\n\n"| Body]),
+			gen_udp:close(Socket);
+		{http, Uri} ->
+			Headers = [
+				{"X-Sentry-Auth", AuthHeader},
+				{"User-Agent", ["raven-erlang/", Vsn]}
+			],
+			httpc:request(post,
+				{Uri ++ "/api/store/", Headers, "application/octet-stream", Body},
+				[],
+				[{body_format, binary}]
+			)
+	end,
 	ok.
-
 
 event_id_i() ->
 	U0 = crypto:rand_uniform(0, (2 bsl 32) - 1),
