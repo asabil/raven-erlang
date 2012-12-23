@@ -8,7 +8,7 @@
 
 
 start(_StartType, _StartArgs) ->
-	case application:get_env(uri) of
+	case application:get_env(transport) of
 		{ok, _} ->
 			case application:get_env(error_logger) of
 				{ok, true} -> error_logger:add_report_handler(raven_error_logger);
