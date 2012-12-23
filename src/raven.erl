@@ -1,7 +1,19 @@
 -module(raven).
 -export([
+	start/0,
+	stop/0,
 	capture/2
 ]).
+
+start() ->
+	ssl:start(),
+	inets:start(),
+	application:start(jiffy),
+	application:start(raven).
+
+stop() ->
+	application:stop(raven).
+
 
 -spec capture(binary(), [parameter()]) -> ok.
 -type parameter() ::

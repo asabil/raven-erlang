@@ -383,8 +383,8 @@ format(Format, Data) ->
 %% @private
 take_or_default(Key, PropList, Default) ->
 	case lists:keytake(Key, 1, PropList) of
-	{value, {_, Value}, PropList2} ->
-		{Value, PropList2};
-	_ ->
-		{Default, PropList}
+		{value, {_, Value}, PropList2} ->
+			{Value, PropList2};
+		_ ->
+			{Default, PropList}
 	end.
