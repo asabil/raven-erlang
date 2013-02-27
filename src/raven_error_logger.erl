@@ -18,21 +18,24 @@ handle_call(_, State) ->
 	{ok, ok, State}.
 
 handle_event({error, _, {Pid, Format, Data}}, State) ->
-	{Message, Details} = parse_message(error, Pid, Format, Data),
-	raven:capture(Message, Details),
+	raven_msg(error, Pid, Format, Data),
 	{ok, State};
 handle_event({error_report, _, {Pid, Type, Report}}, State) ->
-	{Message, Details} = parse_report(error, Pid, Type, lists:sort(Report)),
-	raven:capture(Message, Details),
+	raven_report(error, Pid, Type, Report),
 	{ok, State};
 
 handle_event({warning_msg, _, {Pid, Format, Data}}, State) ->
-	{Message, Details} = parse_message(warning, Pid, Format, Data),
-	raven:capture(Message, Details),
+	raven_msg(warning, Pid, Format, Data),
 	{ok, State};
 handle_event({warning_report, _, {Pid, Type, Report}}, State) ->
-	{Message, Details} = parse_report(warning, Pid, Type, lists:sort(Report)),
-	raven:capture(Message, Details),
+	raven_report(warning, Pid, Type, Report),
+	{ok, State};
+
+handle_event({info_msg, _, {Pid, Format, Data}}, State) ->
+	raven_msg(info, Pid, Format, Data),
+	{ok, State};
+handle_event({info_report, _, {Pid, Type, Report}}, State) ->
+	raven_report(info, Pid, Type, Report),
 	{ok, State};
 
 handle_event(_, State) ->
@@ -46,6 +49,16 @@ code_change(_, State, _) ->
 
 terminate(_, _) ->
 	ok.
+
+%% @private
+raven_msg(Level, Pid, Format, Data) ->
+    {Message, Details} = parse_message(Level, Pid, Format, Data),
+    raven:capture(Message, Details).
+
+%% @private
+raven_report(Level, Pid, Type, Report) ->
+    {Message, Details} = parse_report(Level, Pid, Type, lists:sort(Report)),
+    raven:capture(Message, Details).
 
 
 %% @private
@@ -204,21 +217,20 @@ parse_report(info, Pid, progress, [{started, Started}, {supervisor, Supervisor}]
 		]}
 	]};
 parse_report(Level, Pid, Type, Report) ->
-	Message = case proplists:get_value(message, Report, []) of
-		[] -> <<"Report from process">>;
-		M -> format_string(M)
-	end,
+	{Message, Report2} = take_or_default(message, Report, <<"Report from process">>),
+	{Logger, Report3} = take_or_default(logger, Report2, <<"root">>),
 	{Toplevel, Extra} = lists:partition(fun
 		({exception, _}) -> true;
 		({stacktrace, _}) -> true;
 		(_) -> false
-	end, Report),
+	end, Report3),
 	{Message, [
 		{level, Level},
+		{logger, Logger},
 		{extra, [
 			{type, Type},
 			{pid, Pid} |
-			lists:keydelete(message, 1, Extra)
+			Extra
 		]} |
 		Toplevel
 	]}.
@@ -367,3 +379,12 @@ format_term(Term) ->
 %% @private
 format(Format, Data) ->
 	iolist_to_binary(io_lib:format(Format, Data)).
+
+%% @private
+take_or_default(Key, PropList, Default) ->
+	case lists:keytake(Key, 1, PropList) of
+		{value, {_, Value}, PropList2} ->
+			{Value, PropList2};
+		_ ->
+			{Default, PropList}
+	end.
