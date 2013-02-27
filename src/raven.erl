@@ -3,7 +3,7 @@
 	capture/2
 ]).
 
--spec capture(binary(), [parameter()]) -> ok.
+-spec capture(string() | binary(), [parameter()]) -> ok.
 -type parameter() ::
 	{stacktrace, [stackframe()]} |
 	{exception, {exit | error | throw, term()}} |
@@ -11,6 +11,8 @@
 -type stackframe() ::
 	{module(), atom(), non_neg_integer() | [term()]} |
 	{module(), atom(), non_neg_integer() | [term()], [{atom(), term()}]}.
+capture(Message, Params) when is_list(Message) ->
+	capture(unicode:characters_to_binary(Message), Params);
 capture(Message, Params) ->
 	{ok, Vsn} = application:get_key(raven, vsn),
 	{ok, Uri} = application:get_env(raven, uri),
