@@ -4,6 +4,28 @@ raven-erlang
 raven-erlang is an Erlang client for [Sentry](http://aboutsentry.com/) that integrates with the
 standard ```error_logger``` module.
 
+Quick Start
+===========
+
+```shell
+git clone https://github.com/soundrop/raven-erlang.git
+cd raven-erlang
+make
+erl -pa ebin/ -pa deps/jiffy/ebin/ -s raven_app -raven project '"PROJECT_ID"' -raven public_key '"PUBLIC_KEY"' -raven private_key '"PRIVATE_KEY"'
+```
+
+Which should start and erlang shell prompt, where you should be able to type something like this:
+
+```shell
+Erlang R15B03 (erts-5.9.3.1) [source] [64-bit] [smp:4:4] [async-threads:0] [hipe] [kernel-poll:false] [dtrace]
+
+Eshell V5.9.3.1  (abort with ^G)
+1> raven:capture("Hello Raven", []).
+ok
+2> q().
+ok
+```
+
 Basic Usage
 ===========
 
