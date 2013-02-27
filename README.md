@@ -2,7 +2,7 @@ raven-erlang
 ============
 
 raven-erlang is an Erlang client for [Sentry](http://aboutsentry.com/) that integrates with the
-standard ```error_logge``` module.
+standard ```error_logger``` module.
 
 Basic Usage
 ===========
