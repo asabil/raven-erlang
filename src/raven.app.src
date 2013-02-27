@@ -12,5 +12,11 @@
 		jiffy
 	]},
 	{mod, {raven_app, []}},
-	{env, []}
+	{env, [
+		{uri, "https://app.getsentry.com"},
+		{project, "1"},
+		{public_key, ""},
+		{private_key, ""},
+		{error_logger, false}
+	]}
 ]}.
