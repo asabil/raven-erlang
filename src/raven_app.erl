@@ -1,4 +1,8 @@
 -module(raven_app).
+-export([
+	start/0,
+	stop/0
+]).
 
 -behaviour(application).
 -export([
@@ -6,7 +10,16 @@
 	stop/1
 ]).
 
+-spec start() -> ok | {error, term()}.
+start() ->
+	ensure_started(raven).
 
+-spec stop() -> ok | {error, term()}.
+stop() ->
+	application:stop(raven).
+
+
+%% @hidden
 start(_StartType, _StartArgs) ->
 	case application:get_env(uri) of
 		{ok, _} ->
@@ -19,5 +32,18 @@ start(_StartType, _StartArgs) ->
 			{error, missing_configuration}
 	end.
 
+%% @hidden
 stop(_State) ->
 	ok.
+
+%% @private
+ensure_started(App) ->
+	case application:start(App) of
+		ok ->
+			ok;
+		{error, {already_started, App}} ->
+			ok;
+		{error, {not_started, Other}} ->
+			ensure_started(Other),
+			ensure_started(App)
+	end.
