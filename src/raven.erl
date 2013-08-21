@@ -74,10 +74,10 @@ get_config(App) ->
                 re:run(Dsn, "^(https?://)(.+):(.+)@(.+)/(.+)$", [{capture, all, list}]),
             {Protocol ++ Uri, PublicKey, SecretKey, Project};
         undefined ->
-            {ok, Uri} = application:get_env(raven, uri),
-            {ok, PublicKey} = application:get_env(raven, public_key),
-            {ok, PrivateKey} = application:get_env(raven, private_key),
-            {ok, Project} = application:get_env(raven, project),
+            {ok, Uri} = application:get_env(App, uri),
+            {ok, PublicKey} = application:get_env(App, public_key),
+            {ok, PrivateKey} = application:get_env(App, private_key),
+            {ok, Project} = application:get_env(App, project),
             {Uri, PublicKey, PrivateKey, Project}
     end.
 
