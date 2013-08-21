@@ -15,10 +15,7 @@ capture(Message, Params) when is_list(Message) ->
 	capture(unicode:characters_to_binary(Message), Params);
 capture(Message, Params) ->
 	{ok, Vsn} = application:get_key(raven, vsn),
-	{ok, Uri} = application:get_env(raven, uri),
-	{ok, PublicKey} = application:get_env(raven, public_key),
-	{ok, _PrivateKey} = application:get_env(raven, private_key),
-	{ok, Project} = application:get_env(raven, project),
+        {Uri, PublicKey, _SecretKey, Project} = get_config(),
 	Document = {[
 		{event_id, event_id_i()},
 		{project, unicode:characters_to_binary(Project)},
@@ -56,6 +53,33 @@ capture(Message, Params) ->
 		[{body_format, binary}]
 	),
 	ok.
+
+
+%% @private
+-spec get_config() -> {Uri :: string(),
+                       PublicKey :: string(),
+                       PrivateKey :: string(),
+                       Project :: string()}.
+get_config() ->
+    get_config(raven).
+
+-spec get_config(App :: atom()) -> {Uri :: string(),
+                                    PublicKey :: string(),
+                                    PrivateKey :: string(),
+                                    Project :: string()}.
+get_config(App) ->
+    case application:get_env(App, dsn) of
+        {ok, Dsn} ->
+            {match, [_, Protocol, PublicKey, SecretKey, Uri, Project]} =
+                re:run(Dsn, "^(https?://)(.+):(.+)@(.+)/(.+)$", [{capture, all, list}]),
+            {Protocol ++ Uri, PublicKey, SecretKey, Project};
+        undefined ->
+            {ok, Uri} = application:get_env(raven, uri),
+            {ok, PublicKey} = application:get_env(raven, public_key),
+            {ok, PrivateKey} = application:get_env(raven, private_key),
+            {ok, Project} = application:get_env(raven, project),
+            {Uri, PublicKey, PrivateKey, Project}
+    end.
 
 
 event_id_i() ->

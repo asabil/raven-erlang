@@ -47,7 +47,9 @@ your release (in the reltool.config rel section):
 ```
 
 The raven application itself needs to be configured using the application's environment, this is
-generally done in app.config or sys.config:
+generally done in app.config or sys.config.
+
+It will accept either the individual config components:
 
 ```erlang
 {raven, [
@@ -57,7 +59,17 @@ generally done in app.config or sys.config:
     {private_key, "PRIVATE_KEY"},
     {error_logger, true}  % Set to true in order to install the standard error logger
 ]}.
- ```
+```
+
+or just the DSN:
+
+```erlang
+{raven, [
+    {dsn, "https://PUBLIC_KEY:PRIVATE_KEY@app.getsentry.com/1"},
+    {error_logger, true}  % Set to true in order to install the standard error logger
+]}.
+```
+
 
 Now all events logged using error_logger will be sent to the [Sentry](http://aboutsentry.com/) service.
 
