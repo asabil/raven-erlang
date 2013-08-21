@@ -61,6 +61,21 @@ generally done in app.config or sys.config:
 
 Now all events logged using error_logger will be sent to the [Sentry](http://aboutsentry.com/) service.
 
+
+Lager Backend
+============
+
+At the moment, the raven lager backend shares its configuration with the raven application, and does
+not allow per-backend configuration.
+
+To add the raven backend:
+
+```erlang
+{lager, [
+    {handlers, [
+        {raven_lager_backend, info}]}]}
+```
+
 Advanced Usage
 ==============
 
