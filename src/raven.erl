@@ -61,25 +61,25 @@ capture(Message, Params) ->
                        PrivateKey :: string(),
                        Project :: string()}.
 get_config() ->
-    get_config(raven).
+	get_config(raven).
 
 -spec get_config(App :: atom()) -> {Uri :: string(),
                                     PublicKey :: string(),
                                     PrivateKey :: string(),
                                     Project :: string()}.
 get_config(App) ->
-    case application:get_env(App, dsn) of
-        {ok, Dsn} ->
-            {match, [_, Protocol, PublicKey, SecretKey, Uri, Project]} =
-                re:run(Dsn, "^(https?://)(.+):(.+)@(.+)/(.+)$", [{capture, all, list}]),
-            {Protocol ++ Uri, PublicKey, SecretKey, Project};
-        undefined ->
-            {ok, Uri} = application:get_env(App, uri),
-            {ok, PublicKey} = application:get_env(App, public_key),
-            {ok, PrivateKey} = application:get_env(App, private_key),
-            {ok, Project} = application:get_env(App, project),
-            {Uri, PublicKey, PrivateKey, Project}
-    end.
+	case application:get_env(App, dsn) of
+		{ok, Dsn} ->
+			{match, [_, Protocol, PublicKey, SecretKey, Uri, Project]} =
+				re:run(Dsn, "^(https?://)(.+):(.+)@(.+)/(.+)$", [{capture, all, list}]),
+			{Protocol ++ Uri, PublicKey, SecretKey, Project};
+		undefined ->
+			{ok, Uri} = application:get_env(App, uri),
+			{ok, PublicKey} = application:get_env(App, public_key),
+			{ok, PrivateKey} = application:get_env(App, private_key),
+			{ok, Project} = application:get_env(App, project),
+			{Uri, PublicKey, PrivateKey, Project}
+	end.
 
 
 event_id_i() ->
