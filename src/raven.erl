@@ -15,7 +15,7 @@ capture(Message, Params) when is_list(Message) ->
 	capture(unicode:characters_to_binary(Message), Params);
 capture(Message, Params) ->
 	{ok, Vsn} = application:get_key(raven, vsn),
-        {Uri, PublicKey, _SecretKey, Project} = get_config(),
+	{Uri, PublicKey, _SecretKey, Project} = get_config(),
 	Document = {[
 		{event_id, event_id_i()},
 		{project, unicode:characters_to_binary(Project)},
@@ -56,17 +56,11 @@ capture(Message, Params) ->
 
 
 %% @private
--spec get_config() -> {Uri :: string(),
-		       PublicKey :: string(),
-		       PrivateKey :: string(),
-		       Project :: string()}.
+-spec get_config() -> {Uri :: string(), PublicKey :: string(), PrivateKey :: string(), Project :: string()}.
 get_config() ->
 	get_config(raven).
 
--spec get_config(App :: atom()) -> {Uri :: string(),
-				    PublicKey :: string(),
-				    PrivateKey :: string(),
-				    Project :: string()}.
+-spec get_config(App :: atom()) -> {Uri :: string(), PublicKey :: string(), PrivateKey :: string(), Project :: string()}.
 get_config(App) ->
 	case application:get_env(App, dsn) of
 		{ok, Dsn} ->
