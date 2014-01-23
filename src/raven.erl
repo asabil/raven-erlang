@@ -1,7 +1,55 @@
 -module(raven).
--export([
-	capture/2
-]).
+-behaviour(gen_server).
+
+-vsn(1).
+
+-export([start_link/0,
+		 init/1,
+		 handle_call/3,
+		 handle_cast/2,
+		 code_change/3,
+		 handle_info/2,
+		 terminate/2]).
+	 
+-export([capture/2]).
+
+%%%----------------------------------------------------------------------
+%%% gen_server
+%%%----------------------------------------------------------------------
+ 
+start_link() ->
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+ 
+init([]) ->	
+	{ok, state}.
+ 
+handle_call(_Request, _From, State) ->
+    {reply, ignored, State}.
+ 
+handle_cast({capture, {Message, Params}}, State) ->
+	case catch send(Message, Params) of
+		{'EXIT', _} ->
+			error;
+		_ ->
+			ok
+	end,
+    {noreply, State};
+
+handle_cast(_Msg, State) ->
+    {noreply, State}.
+ 
+handle_info(_Info, State) ->
+    {noreply, State}.
+ 
+terminate(_Reason, _State) ->
+    ok.
+ 
+code_change(_OldVsn, State, _Extra) ->
+    {ok, State}.
+
+%%%----------------------------------------------------------------------
+%%% core
+%%%----------------------------------------------------------------------
 
 -spec capture(string() | binary(), [parameter()]) -> ok.
 -type parameter() ::
@@ -11,9 +59,14 @@
 -type stackframe() ::
 	{module(), atom(), non_neg_integer() | [term()]} |
 	{module(), atom(), non_neg_integer() | [term()], [{atom(), term()}]}.
-capture(Message, Params) when is_list(Message) ->
-	capture(unicode:characters_to_binary(Message), Params);
+	
 capture(Message, Params) ->
+	gen_server:cast(?MODULE, {capture, {Message, Params}}).
+	
+send(Message, Params) when is_list(Message) ->
+	send(unicode:characters_to_binary(Message), Params);
+	
+send(Message, Params) ->
 	{ok, Vsn} = application:get_key(raven, vsn),
 	{Uri, PublicKey, _SecretKey, Project} = get_config(),
 	Document = {[
