@@ -20,6 +20,5 @@ start_link() ->
 %% @hidden
 init([]) ->
 	{ok, {
-		{one_for_one, 5, 10}, [
-		]
+		{one_for_one, 5, 10}, [?WORKER(raven, start_link, [], permanent)]
 	}}.
