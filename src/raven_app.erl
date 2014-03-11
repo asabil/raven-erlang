@@ -34,7 +34,13 @@ start(_StartType, _StartArgs) ->
 
 %% @hidden
 stop(_State) ->
-	ok.
+	case application:get_env(error_logger) of
+		{ok, true} ->
+			error_logger:delete_report_handler(raven_error_logger),
+			ok;
+		_ ->
+			ok
+	end.
 
 %% @private
 ensure_started(App) ->
