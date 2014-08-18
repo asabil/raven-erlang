@@ -57,7 +57,8 @@ It will accept either the individual config components:
     {project, "1"},
     {public_key, "PUBLIC_KEY"},
     {private_key, "PRIVATE_KEY"},
-    {error_logger, true}  % Set to true in order to install the standard error logger
+    {error_logger, true},  % Set to true in order to install the standard error logger
+    {ipfamily, inet}  % Set to inet6 to use IPv6. See `ipfamily` in `httpc:set_options/1` for more information.
 ]}.
 ```
 

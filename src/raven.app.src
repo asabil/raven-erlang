@@ -17,6 +17,7 @@
 		{project, "1"},
 		{public_key, ""},
 		{private_key, ""},
-		{error_logger, false}
+		{error_logger, false},
+		{ipfamily, inet}
 	]}
 ]}.

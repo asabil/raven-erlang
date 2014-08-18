@@ -1,7 +1,20 @@
 -module(raven).
 -export([
-	capture/2
+	capture/2,
+	user_agent/0
 ]).
+
+-define(SENTRY_VERSION, "2.0").
+
+-record(cfg, {
+	uri :: string(),
+	public_key :: string(),
+	private_key :: string(),
+	project :: string(),
+	ipfamily :: atom()
+}).
+
+-type cfg_rec() :: #cfg{}.
 
 -spec capture(string() | binary(), [parameter()]) -> ok.
 -type parameter() ::
@@ -14,11 +27,10 @@
 capture(Message, Params) when is_list(Message) ->
 	capture(unicode:characters_to_binary(Message), Params);
 capture(Message, Params) ->
-	{ok, Vsn} = application:get_key(raven, vsn),
-	{Uri, PublicKey, _SecretKey, Project} = get_config(),
+	Cfg = get_config(),
 	Document = {[
 		{event_id, event_id_i()},
-		{project, unicode:characters_to_binary(Project)},
+		{project, unicode:characters_to_binary(Cfg#cfg.project)},
 		{platform, erlang},
 		{server_name, node()},
 		{timestamp, timestamp_i()},
@@ -26,7 +38,7 @@ capture(Message, Params) ->
 		lists:map(fun
 			({stacktrace, Value}) ->
 				{'sentry.interfaces.Stacktrace', {[
-					{frames, lists:reverse([frame_to_json_i(Frame) || Frame <- Value])}
+					{frames,lists:reverse([frame_to_json_i(Frame) || Frame <- Value])}
 				]}};
 			({exception, {Type, Value}}) ->
 				{'sentry.interfaces.Exception', {[
@@ -43,36 +55,55 @@ capture(Message, Params) ->
 	]},
 	Timestamp = integer_to_list(unix_timestamp_i()),
 	Body = base64:encode(zlib:compress(jiffy:encode(Document, [force_utf8]))),
+	UA = user_agent(),
 	Headers = [
-		{"X-Sentry-Auth", ["Sentry sentry_version=2.0,sentry_client=raven-erlang/", Vsn, ",sentry_timestamp=", Timestamp, ",sentry_key=", PublicKey]},
-		{"User-Agent", ["raven-erlang/", Vsn]}
+		{"X-Sentry-Auth",
+		["Sentry sentry_version=", ?SENTRY_VERSION,
+		 ",sentry_client=", UA,
+		 ",sentry_timestamp=", Timestamp,
+		 ",sentry_key=", Cfg#cfg.public_key]},
+		{"User-Agent", UA}
 	],
+	ok = httpc:set_options([{ipfamily, Cfg#cfg.ipfamily}]),
 	httpc:request(post,
-		{Uri ++ "/api/store/", Headers, "application/octet-stream", Body},
+		{Cfg#cfg.uri ++ "/api/store/", Headers, "application/octet-stream", Body},
 		[],
 		[{body_format, binary}]
 	),
 	ok.
 
+-spec user_agent() -> iolist().
+user_agent() ->
+	{ok, Vsn} = application:get_key(raven, vsn),
+	["raven-erlang/", Vsn].
 
 %% @private
--spec get_config() -> {Uri :: string(), PublicKey :: string(), PrivateKey :: string(), Project :: string()}.
+-spec get_config() -> cfg_rec().
 get_config() ->
 	get_config(raven).
 
--spec get_config(App :: atom()) -> {Uri :: string(), PublicKey :: string(), PrivateKey :: string(), Project :: string()}.
+-spec get_config(App :: atom()) -> cfg_rec().
 get_config(App) ->
+	{ok, IpFamily} = application:get_env(App, ipfamily),
 	case application:get_env(App, dsn) of
 		{ok, Dsn} ->
 			{match, [_, Protocol, PublicKey, SecretKey, Uri, Project]} =
 				re:run(Dsn, "^(https?://)(.+):(.+)@(.+)/(.+)$", [{capture, all, list}]),
-			{Protocol ++ Uri, PublicKey, SecretKey, Project};
+			#cfg{uri = Protocol ++ Uri,
+			     public_key = PublicKey,
+			     private_key = SecretKey,
+			     project = Project,
+			     ipfamily = IpFamily};
 		undefined ->
 			{ok, Uri} = application:get_env(App, uri),
 			{ok, PublicKey} = application:get_env(App, public_key),
 			{ok, PrivateKey} = application:get_env(App, private_key),
 			{ok, Project} = application:get_env(App, project),
-			{Uri, PublicKey, PrivateKey, Project}
+			#cfg{uri = Uri,
+			     public_key = PublicKey,
+			     private_key = PrivateKey,
+			     project = Project,
+			     ipfamily = IpFamily}
 	end.
 
 
