@@ -50,7 +50,7 @@ capture(Message, Params) ->
 	httpc:request(post,
 		{Uri ++ "/api/store/", Headers, "application/octet-stream", Body},
 		[],
-		[{body_format, binary}]
+		[{body_format, binary}, {sync, false}]
 	),
 	ok.
 
