@@ -73,6 +73,22 @@ or just the DSN:
 
 Now all events logged using error_logger will be sent to the [Sentry](http://aboutsentry.com/) service.
 
+
+All error logging is done synchronously. If you want to log errors in async, you can set flag on config.
+
+```erlang
+{raven, [
+    {dsn, "https://PUBLIC_KEY:PRIVATE_KEY@app.getsentry.com/1"},
+    {error_logger, true},
+    {async, true}
+]}.
+```
+
+If you want to send some errors in async, use ```raven:capture/3```
+```erlang
+raven:capture("Test Event", [{foo, bar}], [async]).
+```
+
 Advanced Usage
 ==============
 

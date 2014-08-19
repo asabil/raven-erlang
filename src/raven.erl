@@ -1,6 +1,6 @@
 -module(raven).
 -export([
-	capture/2
+	capture/2, capture/3
 ]).
 
 -spec capture(string() | binary(), [parameter()]) -> ok.
@@ -14,6 +14,9 @@
 capture(Message, Params) when is_list(Message) ->
 	capture(unicode:characters_to_binary(Message), Params);
 capture(Message, Params) ->
+	capture(Message, Params, []).
+
+capture(Message, Params, Options) ->
 	{ok, Vsn} = application:get_key(raven, vsn),
 	{Uri, PublicKey, _SecretKey, Project} = get_config(),
 	Document = {[
@@ -50,7 +53,7 @@ capture(Message, Params) ->
 	httpc:request(post,
 		{Uri ++ "/api/store/", Headers, "application/octet-stream", Body},
 		[],
-		[{body_format, binary}]
+		[{body_format, binary} | get_httpc_options(Options)]
 	),
 	ok.
 
@@ -75,6 +78,14 @@ get_config(App) ->
 			{Uri, PublicKey, PrivateKey, Project}
 	end.
 
+get_httpc_options(Options) ->
+	Timeout = get_httpc_option(timeout, Options, 5000),
+	Sync = not get_httpc_option(async, Options, false),
+	[{timeout, Timeout}, {sync, Sync}].
+
+get_httpc_option(Key, Options, Default) ->
+	Default2 = application:get_env(raven, Key, Default),
+	proplists:get_value(Key, Options, Default2).
 
 event_id_i() ->
 	U0 = crypto:rand_uniform(0, (2 bsl 32) - 1),
