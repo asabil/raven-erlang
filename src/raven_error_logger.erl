@@ -10,9 +10,11 @@
 	handle_info/2
 ]).
 
+-define(PROC_CRASHED, <<"Process crashed">>).
+-record(state, {ignore_proc_crashed}).
 
 init(_) ->
-	{ok, []}.
+	{ok, #state{ignore_proc_crashed=application:get_env(raven, ignore_process_crashed, false)}}.
 
 handle_call(_, State) ->
 	{ok, ok, State}.
@@ -23,7 +25,7 @@ handle_event({error, _, {Pid, Format, Data}}, State) ->
 	{ok, State};
 handle_event({error_report, _, {Pid, Type, Report}}, State) ->
 	{Message, Details} = parse_report(error, Pid, Type, lists:sort(Report)),
-	raven:capture(Message, Details),
+	maybe_capture(State, Message, Details),
 	{ok, State};
 
 handle_event({warning_msg, _, {Pid, Format, Data}}, State) ->
@@ -46,6 +48,16 @@ code_change(_, State, _) ->
 
 terminate(_, _) ->
 	ok.
+
+
+%% @private
+maybe_capture(State, Message, Details) when State#state.ignore_proc_crashed =:= true ->
+	case Message of
+		?PROC_CRASHED -> ok;
+		_ -> raven:capture(Message, Details)
+	end;
+maybe_capture(_, Message, Details) ->
+	raven:capture(Message, Details).
 
 
 %% @private
@@ -143,7 +155,7 @@ parse_report(Level, Pid, crash_report, [Report, Neighbors]) ->
 	end,
 	case Name of
 		undefined ->
-			{<<"Process crashed">>, [
+			{?PROC_CRASHED, [
 				{level, Level},
 				{extra, [
 					{pid, Pid},
