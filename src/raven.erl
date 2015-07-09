@@ -36,6 +36,8 @@ capture(Message, Params) ->
 		{timestamp, timestamp_i()},
 		{message, term_to_json_i(Message)} |
 		lists:map(fun
+			({stacktrace, []}) ->
+				{'sentry.interfaces.Stacktrace', {[]}};
 			({stacktrace, Value}) ->
 				{'sentry.interfaces.Stacktrace', {[
 					{frames,lists:reverse([frame_to_json_i(Frame) || Frame <- Value])}
