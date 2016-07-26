@@ -8,10 +8,10 @@ Quick Start
 ===========
 
 ```shell
-git clone https://github.com/soundrop/raven-erlang.git
+git clone https://github.com/asabil/raven-erlang.git
 cd raven-erlang
-make
-erl -pa ebin/ -pa deps/jiffy/ebin/ -s raven_app -raven project '"PROJECT_ID"' -raven public_key '"PUBLIC_KEY"' -raven private_key '"PRIVATE_KEY"'
+rebar3 compile
+ERL_LIBS=_build/default/lib erl -s raven_app -raven dsn '"https://PUBLIC_KEY:PRIVATE_KEY@app.getsentry.com/PROJECT_ID"'
 ```
 
 Which should start and erlang shell prompt, where you should be able to type something like this:
@@ -49,24 +49,9 @@ your release (in the reltool.config rel section):
 The raven application itself needs to be configured using the application's environment, this is
 generally done in app.config or sys.config.
 
-It will accept either the individual config components:
-
 ```erlang
 {raven, [
-    {uri, "https://app.getsentry.com"},
-    {project, "1"},
-    {public_key, "PUBLIC_KEY"},
-    {private_key, "PRIVATE_KEY"},
-    {error_logger, true},  % Set to true in order to install the standard error logger
-    {ipfamily, inet}  % Set to inet6 to use IPv6. See `ipfamily` in `httpc:set_options/1` for more information.
-]}.
-```
-
-or just the DSN:
-
-```erlang
-{raven, [
-    {dsn, "https://PUBLIC_KEY:PRIVATE_KEY@app.getsentry.com/1"},
+    {dsn, "https://PUBLIC_KEY:PRIVATE_KEY@app.getsentry.com/PROJECT_ID"},
     {error_logger, true}  % Set to true in order to install the standard error logger
 ]}.
 ```

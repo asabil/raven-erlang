@@ -9,14 +9,11 @@
 		public_key,
 		ssl,
 		inets,
-		jiffy
+		jsone
 	]},
 	{mod, {raven_app, []}},
 	{env, [
-		{uri, "https://app.getsentry.com"},
-		{project, "1"},
-		{public_key, ""},
-		{private_key, ""},
+		{dsn, "https://PUBLIC_KEY:PRIVATE_KEY@app.getsentry.com/PROJECT_ID"},
 		{error_logger, false},
 		{ipfamily, inet}
 	]}

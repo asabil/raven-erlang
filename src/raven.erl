@@ -54,7 +54,7 @@ capture(Message, Params) ->
 		end, Params)
 	]},
 	Timestamp = integer_to_list(unix_timestamp_i()),
-	Body = base64:encode(zlib:compress(jiffy:encode(Document, [force_utf8]))),
+	Body = base64:encode(zlib:compress(jsone:encode(Document))),
 	UA = user_agent(),
 	Headers = [
 		{"X-Sentry-Auth",
