@@ -1,6 +1,6 @@
 {application, raven, [
 	{description, "Erlang client for Sentry"},
-	{vsn, git},
+	{vsn, "0.1.0"},
 	{registered, []},
 	{applications, [
 		kernel,
