@@ -38,7 +38,7 @@ capture(Message, Params) ->
 		lists:map(fun
 			({stacktrace, Value}) ->
 				{'sentry.interfaces.Stacktrace', {[
-					{frames,lists:reverse([frame_to_json_i(Frame) || Frame <- Value])}
+					{frames, lists:reverse([frame_to_json_i(Frame) || Frame <- Value])}
 				]}};
 			({exception, {Type, Value}}) ->
 				{'sentry.interfaces.Exception', {[
