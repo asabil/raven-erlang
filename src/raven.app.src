@@ -16,5 +16,10 @@
 		{dsn, "https://PUBLIC_KEY:PRIVATE_KEY@app.getsentry.com/PROJECT_ID"},
 		{error_logger, false},
 		{ipfamily, inet}
+	]},
+	{licenses, ["MIT"]},
+	{maintainers, ["Ali Sabil"]},
+	{links, [
+		{"Github", "https://github.com/asabil/raven-erlang"}
 	]}
 ]}.
