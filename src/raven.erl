@@ -147,7 +147,12 @@ frame_to_json_i({Module, Function, Arguments, Location}) ->
 		]
 	}.
 
-term_to_json_i(Term) when is_binary(Term); is_atom(Term) ->
-	Term;
+term_to_json_i(Term) when is_list(Term) ->
+	case io_lib:printable_unicode_list(Term) of
+		true -> iolist_to_binary(io_lib:format("~120p", [Term]));
+		false -> lists:map(fun(Item) ->
+					   term_to_json_i(Item)
+				   end, Term)
+	end;
 term_to_json_i(Term) ->
-	iolist_to_binary(io_lib:format("~120p", [Term])).
+	Term.
