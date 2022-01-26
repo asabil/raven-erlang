@@ -53,6 +53,8 @@ generally done in app.config or sys.config.
 {raven, [
     {dsn, "https://PUBLIC_KEY:PRIVATE_KEY@app.getsentry.com/PROJECT_ID"},
     {error_logger, true}  % Set to true in order to install the standard error logger
+    % Set cacert file location
+    % {cacertfile, "/etc/ssl/cert.pem"}
 ]}.
 ```
 

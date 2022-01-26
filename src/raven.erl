@@ -73,7 +73,7 @@ capture(Message, Params) ->
           ssl,
           [
             {verify, verify_peer},
-            {cacertfile, "/etc/ssl/cert.pem"},
+            {cacertfile, application:get_env(raven,  cacertfile, "/etc/ssl/cert.pem")},
             {depth, 2},
             {
               customize_hostname_check,
